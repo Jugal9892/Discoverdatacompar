@@ -172,24 +172,27 @@ def save_to_excel(bad_rows_df, two_table_df, three_table_df, four_table_df):
 
         # 3-table sheet as "Markets"
         if three_table_df is not None:
-            # The first row of three_table_df is headers, so write with header=True for better formatting
             three_table_df.to_excel(writer, sheet_name="Markets", index=False, header=False)
 
         # 4-table sheet as "Periods"
         if four_table_df is not None:
             four_table_df.to_excel(writer, sheet_name="Periods", index=False, header=False)
 
-        writer.save()
     output.seek(0)
     return output
 
 def read_sheets(uploaded_file):
-    # Read all sheets into dict of DataFrames with header as first row (but VBA code sometimes copies headers as row 9)
-    xls = pd.ExcelFile(uploaded_file)
+    # Explicitly specify openpyxl engine for .xlsx files
+    try:
+        xls = pd.ExcelFile(uploaded_file, engine="openpyxl")
+    except ImportError as e:
+        st.error("Missing dependency: 'openpyxl'. Please install it with:\n\npip install openpyxl")
+        raise e
+
     sheets = {}
     for sheet_name in xls.sheet_names:
-        # Read without header to keep all rows and match VBA style (since VBA sometimes reads row 9 as header)
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None, dtype=object)
+        # Read without header to keep all rows and VBA-style indexing
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None, dtype=object, engine="openpyxl")
         sheets[sheet_name] = df
     return sheets
 
